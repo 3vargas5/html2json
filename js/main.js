@@ -63,105 +63,233 @@ document.addEventListener('DOMContentLoaded', () => {
 function processContent(htmlString) {
   // 1) Parsear el HTML
   const doc = new DOMParser().parseFromString(htmlString, 'text/html');
-  stripMathJax(doc);
 
-  // 2) Utilidad para evaluar XPaths y devolver nodos
+  // Ejecutar stripMathJax si está disponible
+  if (typeof stripMathJax === 'function') {
+    try {
+      stripMathJax(doc);
+    } catch (e) {
+      // No es crítico si falla, pero es bueno saberlo si se espera que funcione.
+      console.warn("stripMathJax function was found but failed to execute:", e);
+    }
+  }
+
+  // 2) FUNCIONES AUXILIARES
+
+  /**
+   * Evalúa un XPath y devuelve un array de nodos encontrados.
+   * @param {string} xpath La expresión XPath a evaluar.
+   * @returns {Node[]} Un array de nodos.
+   */
   const nodesFromXPath = (xpath) => {
     const snap = doc.evaluate(xpath, doc, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
     const arr = [];
-    for (let i = 0; i < snap.snapshotLength; i++) arr.push(snap.snapshotItem(i));
+    for (let i = 0; i < snap.snapshotLength; i++) {
+      arr.push(snap.snapshotItem(i));
+    }
     return arr;
   };
 
-  // 3) XPaths de pasos de razonamiento y respuesta final
-  const xpathRazonamiento =
-    '//*[@id="root"]/div/div/div[1]/div[4]/div/div/div[3]/div[1]//div[h3]';
-  const xpathFinal =
-    '//*[@id="root"]/div/div/div[1]/div[4]/div/div/div[3]/div[2]//div[h3]';
+  /**
+   * Obtiene el valor del atributo 'text' de un botón específico identificado por su 'tooltip'.
+   * Puede buscar el botón directamente en contextNode o en un ancestro de contextNode.
+   * @param {Node} contextNode El nodo desde donde iniciar la búsqueda.
+   * @param {string} tooltipValue El valor del atributo 'tooltip' del botón buscado.
+   * @param {string|null} searchInAncestorSelector Selector CSS del ancestro donde buscar. Si es null, busca en contextNode.
+   * @returns {string} El valor del atributo 'text' del botón, o string vacío si no se encuentra.
+   */
+  const getTextFromButtonWithTooltip = (contextNode, tooltipValue, searchInAncestorSelector = null) => {
+    if (!contextNode) return '';
 
-  const nodosRazonamiento = nodesFromXPath(xpathRazonamiento);
-  const nodosFinal = nodesFromXPath(xpathFinal);
-  const todosLosNodos = nodosRazonamiento.concat(nodosFinal);
+    let searchBase = contextNode;
+    if (searchInAncestorSelector) {
+      const ancestor = contextNode.closest(searchInAncestorSelector);
+      if (ancestor) {
+        searchBase = ancestor;
+      }
+      // Si no se encuentra el ancestro, searchBase permanece como contextNode,
+      // lo que significa que la búsqueda se limitará al nodo original.
+      // Esto es un fallback razonable si la estructura esperada no está presente.
+    }
+
+    const specificBtn = searchBase.querySelector(`button[tooltip="${tooltipValue}"]`);
+    return specificBtn?.getAttribute('text') || '';
+  };
+
+  /**
+   * Filtra una lista de nodos para mantener solo aquellos que representan "tarjetas" válidas.
+   * Una tarjeta válida debe tener un h3 con texto y un botón "Copy Step".
+   * @param {Node[]} nodos Array de nodos candidatos.
+   * @returns {Node[]} Array de nodos filtrados.
+   */
+  const filterValidCardNodes = (nodos) => {
+    return nodos.filter(nodo => {
+      const h3Element = nodo.querySelector('h3');
+      if (!h3Element || !h3Element.textContent.trim()) {
+        return false; // Debe tener un h3 con texto
+      }
+      // Asumimos que una tarjeta válida para ser procesada como paso debe tener el botón "Copy Step"
+      const contentBtn = nodo.querySelector('button[tooltip="Copy Step"]');
+      if (!contentBtn) {
+        return false; // Debe tener el botón del contenido principal
+      }
+      return true;
+    });
+  };
+
+  // 3) XPATHS Y OBTENCIÓN/FILTRADO DE NODOS PRINCIPALES
+
+  // Estos XPaths identifican los contenedores de los pasos de razonamiento y la respuesta final,
+  // y luego buscan divs que contengan un h3 (que se asume son las tarjetas de cada paso).
+  const xpathRazonamiento = '//*[@id="root"]/div/div/div[1]/div[4]/div/div/div[3]/div[1]//div[h3]';
+  const xpathFinal =    '//*[@id="root"]/div/div/div[1]/div[4]/div/div/div[3]/div[2]//div[h3]';
+
+  const initialReasoningNodes = nodesFromXPath(xpathRazonamiento);
+  const initialFinalNodes = nodesFromXPath(xpathFinal);
+
+  const validReasoningNodes = filterValidCardNodes(initialReasoningNodes);
+  const validFinalNodes = filterValidCardNodes(initialFinalNodes);
+
+  const allValidNodes = validReasoningNodes.concat(validFinalNodes);
+
+  // Si no se encontraron nodos válidos, no hay nada que procesar.
+  if (allValidNodes.length === 0) {
+    if (typeof codeEl !== 'undefined') {
+      codeEl.textContent = "[] // No se encontraron pasos o respuestas válidas para procesar.";
+    }
+    if (typeof copyBtn !== 'undefined') {
+      copyBtn.disabled = true;
+    }
+    return []; // Devuelve un array vacío o maneja como prefieras
+  }
+
+  // 4) PROCESAMIENTO DE CADA NODO/TARJETA VÁLIDO
 
   const result = [];
+  for (let i = 0; i < allValidNodes.length; i++) {
+    const card = allValidNodes[i]; // 'card' es el div que contiene el h3 y se considera un paso/tarjeta
 
-  for (let i = 0; i < todosLosNodos.length; i++) {
-    const card = todosLosNodos[i];
-
-    const step = parseInt(card.querySelector('h3')?.textContent.replace(/\D/g, '') || '0', 10);
+    const stepText = card.querySelector('h3')?.textContent || '0';
+    const stepNumber = parseInt(stepText.replace(/\D/g, '') || '0', 10);
     const status = card.querySelector('.ant-tag')?.textContent.trim() || '';
     const isRegenerated = !!card.querySelector('.ant-tag-gold');
 
-    const buttonsActual = card.querySelectorAll('button');
-    const contentActual = buttonsActual[0]?.getAttribute('text') || '';
-
+    // El contenido principal del paso se toma del botón "Copy Step" DENTRO de la 'card'
+    const contentActual = getTextFromButtonWithTooltip(card, "Copy Step");
     let intervention = '';
 
+    // Lógica para extraer la 'intervention'
+    // Prioridad 1: Si es 'Rewrite', la intervención viene del último markdown-body en el .ant-card-body ancestro.
     if (status === 'Rewrite') {
-      /*  ───────────────────────────────
-          Usamos XPath relativo al card para
-          capturar el último <div class="markdown-body">
-          (es donde está la intervención completa).
-         ─────────────────────────────── */
-      const mdNode = doc.evaluate(
-        './/div[contains(@class,"markdown-body")][last()]',
-        card,
+      const searchNodeForRewrite = card.closest('.ant-card-body') || card;
+      const markdownNode = doc.evaluate(
+        './/div[contains(@class,"markdown-body")][last()]', // XPath relativo al nodo de búsqueda
+        searchNodeForRewrite,
         null,
         XPathResult.FIRST_ORDERED_NODE_TYPE,
         null
       ).singleNodeValue;
-
-      if (mdNode) intervention = mdNode.textContent.trim();
-    } else if (status === 'Incorrect' || status === 'Criticize') {
-      const cardPrev = todosLosNodos[i - 1];
-      const contentPrev =
-        cardPrev?.querySelectorAll('button')[0]?.getAttribute('text') || '';
-      const rawActualInterv = buttonsActual[1]?.getAttribute('text') || '';
-      const idx = rawActualInterv.indexOf(contentPrev);
-      if (idx !== -1 && contentPrev.length)
-        intervention = rawActualInterv.slice(idx + contentPrev.length).trim();
-    } else {
-      const rawInterv = buttonsActual[1]?.getAttribute('text') || '';
-      const idx = rawInterv.indexOf(contentActual);
-      if (idx !== -1 && contentActual.length)
-        intervention = rawInterv.slice(idx + contentActual.length).trim();
+      if (markdownNode) {
+        intervention = markdownNode.textContent.trim();
+      }
     }
 
-    // Campos adicionales label + contenido
-    const text_fields = [];
-    card
-      .querySelectorAll('.ant-space-item > span[style*="font-weight"]')
-      .forEach((lbl) => {
-        const md = lbl
-          .closest('.ant-space-item')
-          ?.nextElementSibling?.querySelector('.markdown-body');
-        if (md)
-          text_fields.push({
-            label: lbl.textContent.replace(/:$/, '').trim(),
-            content: md.textContent.trim(),
-          });
-      });
+    // Prioridad 2: Si no se obtuvo intervención (o no era 'Rewrite'),
+    // intentar con el botón "Copy Suggestion" buscado en el .ant-card-body ancestro.
+    if (!intervention) {
+      intervention = getTextFromButtonWithTooltip(card, "Copy Suggestion", ".ant-card-body");
+    }
+
+    // Prioridad 3: Si aún no hay intervención, aplicar lógicas de fallback para 'Incorrect' o 'Criticize'.
+    if (!intervention) {
+      const allButtonsWithinCard = card.querySelectorAll('button'); // Botones DENTRO de la 'card' (div con h3)
+      // Se asume que el segundo botón dentro de la 'card' puede contener la intervención o una mezcla.
+      const potentialInterventionTextFromSecondButton = allButtonsWithinCard[1]?.getAttribute('text') || '';
+
+      if (status === 'Incorrect') {
+        const previousCard = allValidNodes[i - 1];
+        const previousContent = previousCard ? getTextFromButtonWithTooltip(previousCard, "Copy Step") : '';
+        
+        const index = potentialInterventionTextFromSecondButton.indexOf(previousContent);
+        if (index !== -1 && previousContent.length > 0) {
+          intervention = potentialInterventionTextFromSecondButton.slice(index + previousContent.length).trim();
+        } else if (index === -1 && previousContent.length === 0 && potentialInterventionTextFromSecondButton.length > 0) {
+          // Si no hay contenido previo (ej. primer paso es incorrecto), tomar todo el texto del segundo botón.
+          intervention = potentialInterventionTextFromSecondButton.trim();
+        } else if (index === -1 && potentialInterventionTextFromSecondButton.length > 0) {
+          // Si el contenido previo no se encontró pero el segundo botón tiene texto, tómalo entero.
+          // Esto puede necesitar revisión si la estructura es más compleja.
+          intervention = potentialInterventionTextFromSecondButton.trim();
+        }
+      } else if (status === 'Criticize') {
+        // Para 'Criticize' sin "Copy Suggestion", se intenta usar el texto del segundo botón
+        // si es diferente del contenido actual, o el último markdown-body del ancestro.
+        if (potentialInterventionTextFromSecondButton && potentialInterventionTextFromSecondButton !== contentActual) {
+          intervention = potentialInterventionTextFromSecondButton.trim();
+        } else if (potentialInterventionTextFromSecondButton && potentialInterventionTextFromSecondButton === contentActual) {
+          const searchNodeForCriticizeMarkdown = card.closest('.ant-card-body') || card;
+          const markdownNode = doc.evaluate(
+            './/div[contains(@class,"markdown-body")][last()]',
+            searchNodeForCriticizeMarkdown,
+            null,
+            XPathResult.FIRST_ORDERED_NODE_TYPE,
+            null
+          ).singleNodeValue;
+          if (markdownNode && markdownNode.textContent.trim() !== contentActual) {
+            intervention = markdownNode.textContent.trim();
+          }
+          // Si no, la intervención permanece vacía para Criticize en este fallback.
+        }
+        // Si no, la intervención permanece vacía.
+      }
+    }
+    
+    // Prioridad 4: Fallback general si TODAVÍA no hay intervención, no es un status especial, y hay contentActual.
+    // Compara el contentActual con el texto del SEGUNDO botón DENTRO de la 'card'.
+    if (!intervention && contentActual.length > 0 && status !== 'Rewrite' && status !== 'Incorrect' && status !== 'Criticize') {
+      const allButtonsWithinCard = card.querySelectorAll('button');
+      const fallbackRawIntervention = allButtonsWithinCard[1]?.getAttribute('text') || '';
+      const index = fallbackRawIntervention.indexOf(contentActual);
+      if (index !== -1) {
+        let tempIntervention = fallbackRawIntervention.slice(index + contentActual.length).trim();
+        // Asegurarse de que la intervención calculada es realmente diferente o algo se añadió.
+        if (tempIntervention.length > 0 && tempIntervention !== contentActual) {
+             intervention = tempIntervention;
+        } else if (tempIntervention.length > 0 && fallbackRawIntervention !== contentActual){
+             // Este caso es si tempIntervention ES contentActual, pero el original era más largo.
+             intervention = tempIntervention;
+        }
+      }
+    }
 
     result.push({
-      step_number: step,
-      status,
+      step_number: stepNumber,
+      status: status,
       is_regenerated: isRegenerated,
-      type: nodosRazonamiento.includes(card) ? 'reasoning' : 'final',
+      type: validReasoningNodes.includes(card) ? 'reasoning' : 'final',
       content: contentActual,
-      intervention,
-      text_fields,
+      intervention: intervention,
     });
   }
 
-  // 4) Mostrar resultado
-  codeEl.textContent =
-    '[\n' + result.map((o) => '  ' + toLiteral(o, 2)).join(',\n') + '\n]';
-  codeEl.classList.remove('reveal');
-  void codeEl.offsetWidth;
-  codeEl.classList.add('reveal');
-  copyBtn.disabled = false;
-  copyBtn.textContent = '❐';
+  // 5) MOSTRAR RESULTADO (o devolverlo)
+  // Estas variables (codeEl, toLiteral, copyBtn) deben estar definidas en el ámbito donde se llama a processContent.
+  if (typeof codeEl !== 'undefined' && typeof toLiteral === 'function' && typeof copyBtn !== 'undefined') {
+    codeEl.textContent =
+      '[\n' + result.map((o) => '  ' + toLiteral(o, 2)).join(',\n') + '\n]';
+    codeEl.classList.remove('reveal');
+    void codeEl.offsetWidth; // Forzar reflow para reinicio de animación CSS
+    codeEl.classList.add('reveal');
+    copyBtn.disabled = (result.length === 0);
+    copyBtn.textContent = '❐'; // O el ícono/texto de copiar que uses
+  } else {
+    // Si no se van a usar estos elementos para mostrar, al menos advertir o manejar de otra forma.
+    // console.warn("Elementos para mostrar resultado (codeEl, toLiteral, copyBtn) no están definidos en este ámbito.");
+  }
+
+  return result; // Devuelve el array de resultados procesados.
 }
+
 
 
 
