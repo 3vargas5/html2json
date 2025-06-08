@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const output          = document.getElementById('output');
   const codeEl          = document.getElementById('outputCode');
   const copyBtn         = document.getElementById('copyBtn');
+  const copyPromptBtn   = document.getElementById('copyPromptBtn');
+  const slideWrapper    = document.getElementById('slideWrapper');
 
   /* util: convert value → JS literal */
   function toLiteral(x, indent = 0) {
@@ -225,7 +227,8 @@ function processContent(htmlString) {
   if (typeof codeEl !== 'undefined' && typeof toLiteral === 'function' && typeof copyBtn !== 'undefined') {
     codeEl.textContent = '[\n' + result.map((o) => '  ' + toLiteral(o, 2)).join(',\n') + '\n]';
     codeEl.classList.remove('reveal'); void codeEl.offsetWidth; codeEl.classList.add('reveal');
-    copyBtn.disabled = (result.length === 0); copyBtn.textContent = '❐';
+    copyBtn.disabled = (result.length === 0); copyBtn.textContent = 'Copy JSON';
+    if (copyPromptBtn) copyPromptBtn.disabled = (result.length === 0);
   }
   return result;
 }
@@ -257,10 +260,16 @@ function processContent(htmlString) {
     if (copyBtn.disabled) return;
     try {
       await navigator.clipboard.writeText(codeEl.textContent);
-      copyBtn.textContent = '✓';
-      setTimeout(() => (copyBtn.textContent = '❐'), 1500);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => (copyBtn.textContent = 'Copy JSON'), 1500);
     } catch (err) {
       alert('Copy failed: ' + err);
     }
   });
+
+  if (copyPromptBtn) {
+    copyPromptBtn.addEventListener('click', () => {
+      slideWrapper?.classList.add('show-form');
+    });
+  }
 });
