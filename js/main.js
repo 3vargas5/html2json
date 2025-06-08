@@ -243,6 +243,9 @@ function processContent(htmlString) {
     if (!file) return;
     fileNameDisplay.textContent = file.name;
     document.body.classList.remove('show-prompt');
+    output.style.display = '';
+    copyBtn.style.display = '';
+    copyPromptBtn.style.display = '';
     const reader = new FileReader();
     reader.onload = ev => {
       try {
@@ -275,6 +278,11 @@ function processContent(htmlString) {
     const combined = PROMPT_TEXT + codeEl.textContent;
     promptCodeEl.textContent = combined;
     document.body.classList.add('show-prompt');
+    setTimeout(() => {
+      output.style.display = 'none';
+      copyBtn.style.display = 'none';
+      copyPromptBtn.style.display = 'none';
+    }, 500);
     try {
       await navigator.clipboard.writeText(combined);
       copyPromptBtn.textContent = '✓';
