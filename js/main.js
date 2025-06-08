@@ -3,7 +3,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileNameDisplay = document.getElementById('fileName');
   const output          = document.getElementById('output');
   const codeEl          = document.getElementById('outputCode');
+  const promptContainer = document.getElementById('promptContainer');
+  const promptCodeEl    = document.getElementById('promptCode');
   const copyBtn         = document.getElementById('copyBtn');
+  const copyPromptBtn   = document.getElementById('copyPromptBtn');
+
+  const PROMPT_TEXT = 'Prompt:\n';
 
   /* util: convert value → JS literal */
   function toLiteral(x, indent = 0) {
@@ -237,6 +242,7 @@ function processContent(htmlString) {
     const file = e.target.files[0];
     if (!file) return;
     fileNameDisplay.textContent = file.name;
+    document.body.classList.remove('show-prompt');
     const reader = new FileReader();
     reader.onload = ev => {
       try {
@@ -259,6 +265,20 @@ function processContent(htmlString) {
       await navigator.clipboard.writeText(codeEl.textContent);
       copyBtn.textContent = '✓';
       setTimeout(() => (copyBtn.textContent = '❐'), 1500);
+    } catch (err) {
+      alert('Copy failed: ' + err);
+    }
+  });
+
+  copyPromptBtn.addEventListener('click', async () => {
+    if (copyBtn.disabled) return;
+    const combined = PROMPT_TEXT + codeEl.textContent;
+    promptCodeEl.textContent = combined;
+    document.body.classList.add('show-prompt');
+    try {
+      await navigator.clipboard.writeText(combined);
+      copyPromptBtn.textContent = '✓';
+      setTimeout(() => (copyPromptBtn.textContent = 'P+J'), 1500);
     } catch (err) {
       alert('Copy failed: ' + err);
     }

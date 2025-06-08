@@ -125,4 +125,52 @@
     color: #252525;
     cursor: not-allowed;
     box-shadow: none;
-  }  
+  }
+
+  #copyPromptBtn {
+    position: fixed;
+    bottom: 6.5rem;
+    right: 1.5rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent-cyan);
+    color: #002021;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    transition: transform 0.15s, filter 0.15s;
+  }
+  #copyPromptBtn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+
+  #promptContainer {
+    display: none;
+    width: 100%;
+    background: #26123C;
+    border: 1px solid var(--accent-pink);
+    border-radius: 8px;
+    padding: 1.2rem;
+    min-height: 220px;
+    max-height: 60vh;
+    overflow: auto;
+  }
+  #promptCode {
+    display: block;
+    font-family: 'Roboto Mono', monospace;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  body.show-prompt #promptContainer { display: block; animation: slideIn 0.5s forwards; }
+  body.show-prompt #output,
+  body.show-prompt #copyBtn,
+  body.show-prompt #copyPromptBtn { animation: slideOut 0.5s forwards; pointer-events: none; }
+
+  @keyframes slideOut { from { transform: translateX(0); opacity:1; } to { transform: translateX(-100%); opacity:0; } }
+  @keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
