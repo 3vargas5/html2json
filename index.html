@@ -1,58 +1,15 @@
-  <!--
-                                                   ≠     π                                        
-                                                  √∞   π√                                         
-                                                  ∞√   ∞                                          
-                                                  ≈   =                                           
-                                                  ≠  ≈                                            
-                                                  =  ∞                                            
-                                                  = π√                                            
-                                                  ≠ ≈                                             
-                                                 √≠π∞                                             
-                                                 πππ                                              
-                                                 ∞≠≈                                              
-                                                 ∞≠√                                              
-                                                 ∞=π                                              
-                                                 ≠×∞                                              
-                                               ≠++-×≠                                             
-                                              ×+++-×××≠                                           
-                                             =+++++-××∞                                           
-                                              +++++++-=                                           
-                                              ÷++++++÷                                            
-                                               ≠++++×√                                            
-                           ππ ≠÷∞÷              π-+∞                                              
-                      ≈-++++-+-× ∞+×≠            ××                                               
-                     -+++++++-×××-  ÷∞×==+×××∞  √-÷                                               
-                   =+++++++++-+++--≠√≈×++++--+  ≠+∞                                               
-                   ∞++++++++++++++++++++++++++++×√                                                
-                     ≠+++++++++++++= =--++++++++-√ ∞≈                                             
-                   ∞-∞ ∞+++++++-∞   ≈≠  ×+++×=  +∞  ≈√                                            
-                 ≈×∞     ∞=÷≠π=    ∞≠    ∞π√    ≠∞   ≠                                            
-               ≠×            ∞∞   ∞×            ≠÷    ÷                                           
-             ×∞             π×    ÷             ≠+√   π≠                                          
-          ≠÷√             ∞√÷   √×              ≈≠÷    ∞∞                                         
-       π÷=                      ×               ≠√×π    ≠√                                        
-   π×++∞                       -π               =π∞≈     ≠                                        
-                              ×                 =√        ÷                                       
-                             ×√                   π∞       ≈≈√                                    
-                           π×π                                                                    
-                                                                                                  
-                                                                                                  
-                                                                                                  
-                                                                                                                                                                                                                           
-  -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>HTML → JS String-Literal Converter</title>
 
-<!-- Favicon clásico para compatibilidad -->
-<link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
-<link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
-<link rel="shortcut icon" href="favicon/favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
-<link rel="manifest" href="favicon/site.webmanifest" />
+  <!-- Favicon clásico para compatibilidad -->
+  <link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+  <link rel="shortcut icon" href="favicon/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="favicon/site.webmanifest" />
 
   <!-- Swiss-style UI font + monospaced code font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -70,15 +27,36 @@
       <span id="fileName">No file selected</span>
     </label>
 
-    <!-- Ahora dentro de <pre> tienes un <code> con id="outputCode" -->
     <pre id="output" aria-live="polite">
       <code id="outputCode">The JavaScript string literal will appear here…</code>
     </pre>
   </div>
 
+  <!-- NUEVO: Botón para abrir el menú de feedback -->
+  <button id="openFeedbackMenuBtn" aria-label="Open Copy Prompt Menu" title="Open Copy Prompt Menu" style="display: none;">📝</button>
+
   <button id="copyBtn" aria-label="Copy" title="Copy to clipboard" disabled>❐</button>
 
-  <!-- Script separado -->
+  <!-- NUEVO: Estructura del menú desplegable -->
+  <div id="feedbackMenu" class="slide-out-menu">
+    <div class="menu-content">
+      <h2>Copy Prompt Menu</h2>
+      
+      <label for="problemStatement">Problem Statement:</label>
+      <textarea id="problemStatement" rows="5"></textarea>
+      
+      <div class="checkbox-container">
+        <input type="checkbox" id="solutionSuggestionCheckbox">
+        <label for="solutionSuggestionCheckbox">Solution Suggestion?</label>
+      </div>
+      
+      <label for="solutionSuggest">Solution Suggest:</label>
+      <textarea id="solutionSuggest" rows="5" disabled></textarea>
+      
+      <button id="copyFeedbackBtn">Copy Prompt & Close</button>
+    </div>
+  </div>
+
   <script src="js/main.js" defer></script>
 
   <script>
