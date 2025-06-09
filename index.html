@@ -1,6 +1,51 @@
+  <!--
+                                                   ≠     π                                        
+                                                  √∞   π√                                         
+                                                  ∞√   ∞                                          
+                                                  ≈   =                                           
+                                                  ≠  ≈                                            
+                                                  =  ∞                                            
+                                                  = π√                                            
+                                                  ≠ ≈                                             
+                                                 √≠π∞                                             
+                                                 πππ                                              
+                                                 ∞≠≈                                              
+                                                 ∞≠√                                              
+                                                 ∞=π                                              
+                                                 ≠×∞                                              
+                                               ≠++-×≠                                             
+                                              ×+++-×××≠                                           
+                                             =+++++-××∞                                           
+                                              +++++++-=                                           
+                                              ÷++++++÷                                            
+                                               ≠++++×√                                            
+                           ππ ≠÷∞÷              π-+∞                                              
+                      ≈-++++-+-× ∞+×≠            ××                                               
+                     -+++++++-×××-  ÷∞×==+×××∞  √-÷                                               
+                   =+++++++++-+++--≠√≈×++++--+  ≠+∞                                               
+                   ∞++++++++++++++++++++++++++++×√                                                
+                     ≠+++++++++++++= =--++++++++-√ ∞≈                                             
+                   ∞-∞ ∞+++++++-∞   ≈≠  ×+++×=  +∞  ≈√                                            
+                 ≈×∞     ∞=÷≠π=    ∞≠    ∞π√    ≠∞   ≠                                            
+               ≠×            ∞∞   ∞×            ≠÷    ÷                                           
+             ×∞             π×    ÷             ≠+√   π≠                                          
+          ≠÷√             ∞√÷   √×              ≈≠÷    ∞∞                                         
+       π÷=                      ×               ≠√×π    ≠√                                        
+   π×++∞                       -π               =π∞≈     ≠                                        
+                              ×                 =√        ÷                                       
+                             ×√                   π∞       ≈≈√                                    
+                           π×π                                                                    
+                                                                                                  
+                                                                                                  
+                                                                                                  
+                                                                                                                                                                                                                           
+  -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Ya tienes Font Awesome, ¡genial! -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <meta charset="UTF-8" />
   <title>HTML → JS String-Literal Converter</title>
 
@@ -23,7 +68,8 @@
 
     <label class="file-upload">
       <input type="file" id="fileInput" accept=".html,.htm" aria-label="Choose HTML file">
-      <button type="button">Choose .html file</button>
+      <!-- Puedes añadir un icono al botón "Choose .html file" si quieres, por ejemplo: -->
+      <button type="button"><i class="fas fa-file-arrow-up"></i> Choose .html file</button>
       <span id="fileName">No file selected</span>
     </label>
 
@@ -32,12 +78,17 @@
     </pre>
   </div>
 
-  <!-- NUEVO: Botón para abrir el menú de feedback -->
-  <button id="openFeedbackMenuBtn" aria-label="Open Copy Prompt Menu" title="Open Copy Prompt Menu" style="display: none;">📝</button>
+  <!-- Botón para abrir el menú de feedback CON ICONO -->
+  <button id="openFeedbackMenuBtn" aria-label="Open Copy Prompt Menu" title="Open Copy Prompt Menu" style="display: none;">
+    <i class="fas fa-pen-to-square"></i> <!-- Icono para el menú de feedback/prompt, o usa fa-bars, fa-ellipsis-h -->
+  </button>
 
-  <button id="copyBtn" aria-label="Copy" title="Copy to clipboard" disabled>❐</button>
+  <!-- Botón de copiar principal CON ICONO -->
+  <button id="copyBtn" aria-label="Copy" title="Copy to clipboard" disabled>
+    <i class="fas fa-copy"></i> <!-- Icono de copiar por defecto -->
+  </button>
 
-  <!-- NUEVO: Estructura del menú desplegable -->
+  <!-- Estructura del menú desplegable -->
   <div id="feedbackMenu" class="slide-out-menu">
     <div class="menu-content">
       <h2>Copy Prompt Menu</h2>
@@ -53,7 +104,10 @@
       <label for="solutionSuggest">Solution Suggest:</label>
       <textarea id="solutionSuggest" rows="5" disabled></textarea>
       
-      <button id="copyFeedbackBtn">Copy Prompt & Close</button>
+      <!-- Botón de copiar feedback CON ICONO Y TEXTO -->
+      <button id="copyFeedbackBtn">
+        <i class="fas fa-clipboard-check"></i> Copy Prompt & Close <!-- Icono + Texto -->
+      </button>
     </div>
   </div>
 

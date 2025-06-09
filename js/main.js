@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('fileInput');
   const fileNameDisplay = document.getElementById('fileName');
-  const output = document.getElementById('output');
+  // const output = document.getElementById('output'); // Parece no usarse, lo comento por si acaso
   const codeEl = document.getElementById('outputCode');
   const copyBtn = document.getElementById('copyBtn');
 
@@ -12,6 +12,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const solutionSuggestionCheckbox = document.getElementById('solutionSuggestionCheckbox');
   const solutionSuggestTextarea = document.getElementById('solutionSuggest');
   const copyFeedbackBtn = document.getElementById('copyFeedbackBtn');
+
+  // --- ICONOS FONT AWESOME ---
+  const ICON_COPY = '<i class="fas fa-copy"></i>'; // Icono de copiar estándar
+  const ICON_CHECK = '<i class="fas fa-check"></i>'; // Icono de check (copiado)
+  // Para el botón de feedback, podrías querer un icono más específico o texto + icono
+  // Ejemplo: '<i class="fas fa-clipboard-list"></i> Copiar Feedback';
+  // Por ahora, usaremos uno de copiar también, pero puedes personalizarlo.
+  const ICON_FEEDBACK_COPY_DEFAULT_TEXT = copyFeedbackBtn.innerHTML; // Guardar el texto original del botón si lo tiene
+  const ICON_FEEDBACK_COPY = '<i class="fas fa-clipboard-check"></i>'; // Un icono diferente para el feedback
+                                                                    // o puedes usar ICON_COPY si prefieres
+
+  // Inicializar el botón de copiar principal con el icono
+  if (copyBtn) {
+    copyBtn.innerHTML = ICON_COPY;
+    copyBtn.disabled = true; // Inicialmente deshabilitado
+  }
+
+  // Inicializar el botón de copiar feedback si existe y quieres cambiar su contenido inicial
+  // Si el botón ya tiene texto y solo quieres AÑADIR un icono, la lógica sería diferente.
+  // Por ahora, asumimos que queremos reemplazar su contenido con un icono + texto (o solo icono).
+  // Si el botón `copyFeedbackBtn` ya tiene texto en el HTML que quieres conservar con un icono al lado:
+  // const originalFeedbackBtnText = copyFeedbackBtn.textContent.trim();
+  // const defaultFeedbackBtnHTML = `<i class="fas fa-paper-plane"></i> ${originalFeedbackBtnText}`;
+  // Si quieres reemplazarlo completamente o el botón está vacío:
+  const defaultFeedbackBtnHTML = `<i class="fas fa-clipboard"></i> Copy Prompt`; // Ejemplo con icono y texto
+  if (copyFeedbackBtn) {
+    copyFeedbackBtn.innerHTML = defaultFeedbackBtnHTML;
+  }
+
 
   /* util: convert value → JS literal */
   function toLiteral(x, indent = 0) {
@@ -123,7 +152,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (allValidNodes.length === 0) {
       if (typeof codeEl !== 'undefined') codeEl.textContent = "[] // No se encontraron pasos o respuestas válidas.";
-      if (typeof copyBtn !== 'undefined') copyBtn.disabled = true;
+      if (typeof copyBtn !== 'undefined') {
+        copyBtn.disabled = true;
+        copyBtn.innerHTML = ICON_COPY; // Restaurar icono por si acaso
+      }
       if (typeof openFeedbackMenuBtn !== 'undefined') openFeedbackMenuBtn.style.display = 'none'; 
       return [];
     }
@@ -208,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
       codeEl.textContent = '[\n' + result.map((o) => '  ' + toLiteral(o, 2)).join(',\n') + '\n]';
       codeEl.classList.remove('reveal'); void codeEl.offsetWidth; codeEl.classList.add('reveal');
       copyBtn.disabled = (result.length === 0);
-      copyBtn.textContent = '❐';
+      copyBtn.innerHTML = ICON_COPY; // Cambiado de textContent a innerHTML
       
       if (result.length > 0) {
         openFeedbackMenuBtn.style.display = 'grid';
@@ -224,7 +256,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!file) {
         fileNameDisplay.textContent = 'No file selected';
         codeEl.textContent = 'The JavaScript string literal will appear here…';
-        copyBtn.disabled = true;
+        if (copyBtn) {
+            copyBtn.disabled = true;
+            copyBtn.innerHTML = ICON_COPY; // Restaurar icono
+        }
         openFeedbackMenuBtn.style.display = 'none';
         feedbackMenu.classList.remove('active');
         problemStatementTextarea.value = '';
@@ -264,8 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (copyBtn.disabled) return;
     try {
       await navigator.clipboard.writeText(codeEl.textContent);
-      copyBtn.textContent = '✓';
-      setTimeout(() => (copyBtn.textContent = '❐'), 1500);
+      copyBtn.innerHTML = ICON_CHECK; // Cambiado de textContent a innerHTML
+      setTimeout(() => (copyBtn.innerHTML = ICON_COPY), 1500); // Restaurar icono
     } catch (err) {
       alert('Copy failed: ' + err);
     }
@@ -284,14 +319,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // MODIFICADO: EventListener para el botón "Copy Feedback & Close"
   copyFeedbackBtn.addEventListener('click', async () => {
     const problemStatement = problemStatementTextarea.value.trim();
-    const jsonContent = codeEl.textContent.trim(); // El JSON del output
+    const jsonContent = codeEl.textContent.trim(); 
     const provideOptionalSolution = solutionSuggestionCheckbox.checked;
     const optionalSolution = solutionSuggestTextarea.value.trim();
 
-    // Validación: Problem Statement es requerido y el JSON debe existir
     if (!problemStatement) {
         alert("Problem statement is required to generate the prompt.");
         problemStatementTextarea.focus();
@@ -396,18 +429,17 @@ Correction suggestion: Recalculate τ(3465) with four prime factors.
 `;
 
     try {
-      await navigator.clipboard.writeText(finalPrompt.trim()); // .trim() para quitar espacios extra al inicio/final
-      const originalButtonText = copyFeedbackBtn.textContent;
-      copyFeedbackBtn.textContent = 'Prompt Copied!';
+      await navigator.clipboard.writeText(finalPrompt.trim());
+      // Guardar el contenido actual del botón para restaurarlo
+      // const originalButtonHTML = copyFeedbackBtn.innerHTML; // Ya lo guardamos en defaultFeedbackBtnHTML
+      copyFeedbackBtn.innerHTML = `${ICON_CHECK} Prompt Copied!`; // Usar el icono de check y un texto
       setTimeout(() => {
-        copyFeedbackBtn.textContent = originalButtonText;
+        copyFeedbackBtn.innerHTML = defaultFeedbackBtnHTML; // Restaurar el contenido original con icono
         feedbackMenu.classList.remove('active'); 
-      }, 1500); // Un poco más de tiempo para leer "Prompt Copied!"
+      }, 1500);
     } catch (err) {
       console.error('Failed to copy prompt: ', err);
       alert('Failed to copy prompt: ' + err.message);
-      // Considerar no cerrar el menú si la copia falla, para que el usuario pueda intentarlo de nuevo
-      // o copiar manualmente el contenido del prompt si se mostrara en algún lado (actualmente no lo hace).
     }
   });
 
